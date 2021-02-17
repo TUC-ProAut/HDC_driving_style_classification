@@ -12,7 +12,7 @@ It has 3 different models:
 Tested with the Python packages listed in requirements.txt.
 
 ## Usage 
-* first, clone the Repo `git clone https://gitlab.hrz.tu-chemnitz.de/scken--tu-chemnitz.de/vsa_driving_behaviour_classification.git`
+* first, clone the Repo `git clone https://github.com/TUC-ProAut/HDC_driving_style_classification.git`
 
 ### Encode the data set into high-dimensional vectors
 1. run the `HDC_encoding.m` script:
