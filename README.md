@@ -23,7 +23,7 @@ Tested with the Python packages listed in requirements.txt.
         * 2... use the original script with the VSA_toolbox from https://github.com/TUC-ProAut/VSA_Toolbox
             * using the VSA_toolbox can provide a better understanding of the code, but requires more computing time
             * to use the VSA_toolbox clone the repo `git clone https://github.com/TUC-ProAut/VSA_Toolbox` and add to MATLAB path `addpath('/path/to/VSA_toolbox')`
-2. run the `HDC_encoding_for_hyperparam_analysis.m` to create all encodings for the complete hyper-parameter analysis (different number of dimenions, different scaling)
+2. (Optional) run the `HDC_encoding_for_hyperparam_analysis.m` to create all encodings for the complete hyper-parameter analysis (different number of dimenions, different scaling)
 
 ### Train the networks (Python)
 1. Run `python3 main.py --help` to check the available command line args.
@@ -41,7 +41,7 @@ The results are written to the log file main_log.log
 ### Data efficiency experiment (Python)
 1. Run `python3 main.py --data_efficiency True --HDC_ANN True` for the appropriate network as in section above 
 
-### Hyper-parameter analysis for HDC encodings (Python)
+### (Optional) Hyper-parameter analysis for HDC encodings (Python)
 1. Run `python3 main.py --hyperparams_experiment True --HDC_ANN True` 
 
 ### Run Baseline models (MATLAB)
