@@ -17,10 +17,10 @@ Tested with the Python packages listed in requirements.txt.
 ### Encode the data set into high-dimensional vectors
 1. run the `HDC_encoding.m` script:
     * default parameters: 2048 dimensions, scaling of 6 and using cpu computing
-    * with the parameter use_gpu you can choose between three different options:
+    * with the parameter *mode* you can choose between three different options:
         * 0... use the CPU (default, no VSA_toolbox is required)
         * 1... use the GPU
-        * something else (-1) use the original script with the VSA_toolbox from https://github.com/TUC-ProAut/VSA_Toolbox
+        * 2... use the original script with the VSA_toolbox from https://github.com/TUC-ProAut/VSA_Toolbox
             * using the VSA_toolbox can provide a better understanding of the code, but requires more computing time
             * to use the VSA_toolbox clone the repo `git clone https://github.com/TUC-ProAut/VSA_Toolbox` and add to MATLAB path `addpath('/path/to/VSA_toolbox')`
 2. run the `HDC_encoding_for_hyperparam_analysis.m` to create all encodings for the complete hyper-parameter analysis (different number of dimenions, different scaling)
