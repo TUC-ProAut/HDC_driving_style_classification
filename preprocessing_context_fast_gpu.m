@@ -1,7 +1,8 @@
-% This is a runtime optimized version of preprocessing_context function 
-% to encode input data with a VSA running on GPU
+function output_complete = preprocessing_context_fast_gpu(data_in,dim,frac_scale)
+% PREPROCESSING_CONTEXT_FAST_GPU is a runtime optimized preprocessing script 
+% to encode input data with a VSA running on GPU (without VSA_toolbox)
 %
-% This version exploits that there are data duplicates
+% This version can exploits that there are data duplicates
 % e.g. in the UAH dataset. There, the end (second half 33:64) of each sequence is the beginning 
 % (first halt 1:32) of the next sequence. This fundtion vesrion avoids duplicate computations.
 %
@@ -13,20 +14,31 @@
 % The function does a lot of initial allococation and some precomputations. The relevant 
 % runtime is measured inside the function!
 % 
-% data ... single(!) GPU array
+% data ... single(!) array
 % 
 % example call:
 %
 % data = load('data/uah_dataset.mat');
-% D = data.motorway_dataset(1:2000,:,:); DU = gpuArray(single(D));
+% D = data.motorway_dataset(1:2000,:,:); DU = single(D);
 % output=preprocessing_context_fast_duplicateData(DU,2048,6);
 % 
+%   INPUT: 
+%       data_in         -   data array with size of n x t x m (n... number of samples,
+%                           t... the number of time-steps and m... the number of
+%                           sensortypes 
+%       dim             -   number of dimensions of the resulting high-dimensional
+%                           vectors
+%       frac_scale      -   scaling of fractional binding 
+%
+%   OUTPUT:
+%       output_complete -   output array with size of n x d (d... number of
+%                           dimensions and n... the number of samples)
+%
 % nepe, Feb 2021
 % Copyright (C) 2021 Chair of Automation Technology / TU Chemnitz
-function output_complete = preprocessing_context_fast_gpu(data_in,dim,frac_scale)
 
     gd = gpuDevice(); 
-    assert(isgpuarray(data_in)); 
+    data_in = gpuArray(data_in); 
     assert(isa(gather(data_in(1)), 'single')); % test if single precision input
 
     % devide data set into smaller pieces if it is to big for GPU

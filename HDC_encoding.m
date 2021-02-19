@@ -5,22 +5,13 @@
 dim = 2048;
 scale = 6;
 vsa = 'FHRR';
-use_gpu = 0; % 1... use GPU, 0... use CPU, other... use the VSA_toolbox  
+mode = 0; % 0... use CPU, 1... use GPU, 2... use the VSA_toolbox  
 
 % load dataset
 data = load('data/uah_dataset.mat');
 
-if use_gpu == 0
-    output_motor = preprocessing_context_fast_cpu(single(data.motorway_dataset),dim,scale);
-    output_second = preprocessing_context_fast_cpu(single(data.secondary_dataset),dim,scale);
-elseif use_gpu == 1
-    output_motor = preprocessing_context_fast_gpu(gpuArray(single(data.motorway_dataset)),dim,scale);
-    output_second = preprocessing_context_fast_gpu(gpuArray(single(data.secondary_dataset)),dim,scale);
-else
-    % the VSA_toolbox will be used
-    output_motor = preprocessing_context(single(data.motorway_dataset),dim,scale,vsa);
-    output_second = preprocessing_context(single(data.secondary_dataset),dim,scale,vsa);
-end
+output_motor = preprocessing_context(single(data.motorway_dataset),dim,scale,mode);
+output_second = preprocessing_context(single(data.secondary_dataset),dim,scale,mode);
 
 % save files 
 motorway_labels = data.motorway_labels;

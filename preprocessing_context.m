@@ -1,57 +1,65 @@
-function output = preprocessing_context(data,dim,frac_scale,vsa,seed)
-% PREPROCESSING_CONTEXT creates a HDC encoding based on the given input data 
-% - the VSA_toolbox (https://github.com/TUC-ProAut/VSA_Toolbox) is required
+function output = preprocessing_context(data,dim, frac_scale, mode)
+% PREPROCESSING_CONTEXT can exploits that there are data duplicates
+% the function check if this assumtion is true and generate the context
+% vectors as fast as possible
+% 
+% depending on the given mode, the function computes in CPU mode with or without
+% the VSA_toolbox, or in GPU mode 
 % 
 %   INPUT: 
-%       data        -   data array with size of nxtxm (n... number of samples,
+%       data        -   data array with size of n x t x m (n... number of samples,
 %                       t... the number of time-steps and m... the number of
 %                       sensortypes 
 %       dim         -   number of dimensions of the resulting high-dimensional
 %                       vectors
 %       frac_scale  -   scaling of fractional binding 
-%       vsa         -   name of the used VSA implementation (from the VSA
-%                       Toolbox) [string] 
-%       seed        -   random seed
-%   OUTPUT: 
-%       output      -   output array with size of dxn (d... number of
-%                       dimensions and m... the number of samples)
+%       mode        -   computing mode (0... CPU without VSA_toolbox, 1...
+%                       GPU without VSA_toolbox, 2... CPU with VSA_toolbox
+%
+%   OUTPUT:
+%       output      -   output array with size of d x n (d... number of
+%                       dimensions and n... the number of samples)
+%
 % scken, 2021
 % Copyright (C) 2021 Chair of Automation Technology / TU Chemnitz
+
+if nargin < 4
+    mode = 0; % default is using CPU without VSA_toolbox
+end
+
+vsa = 'FHRR'; % default VSA is FHRR
+
+if mode==2 % if mode is VSA_toolbox
+    output = preprocessing_context_VSA_toolbox(single(data),dim,frac_scale,vsa);
+else
+    % check where the duplicate assumtion is true 
+    seq1 = data(:,1:32,:);
+    seq2 = data(:,33:end,:);
+    assum = seq1==circshift(seq2,1,1);
+    assum = sum(sum(assum,2),3);
+    assum = assum==288; % where is the duplicate sequence true
     
-    if nargin < 5
-        seed = 0;
+    % extract consecutive ones
+    flag = diff([0 assum']);
+    idx_start = find(flag==1);
+    idx_end = find(flag==-1);
+    if idx_end(end) ~= size(data,1)
+        idx_end(end+1) = size(data,1)+1;
     end
-    
-    try
-        VSA = vsa_env('vsa',vsa,'dim',dim);
-    catch
-        error('Cannot find the VSA toolbox. Please download it from https://github.com/TUC-ProAut/VSA_Toolbox and add it to MATLAB path!')
-        return
+    current_idx = 1;
+    output = [];
+        
+    for i=1:numel(idx_start)
+        % preprocess the data, which are not in block
+        for d=current_idx:(idx_start(i)-1)
+            if mode == 0; output(end+1,:) = preprocessing_context_fast_cpu(data(d,:,:),dim, frac_scale); end
+            if mode == 1; output(end+1,:) = preprocessing_context_fast_gpu(data(d,:,:),dim, frac_scale); end
+                
+        end
+        
+        if mode == 0; output = cat(1,output, preprocessing_context_fast_cpu(data(idx_start(i):idx_end(i)-1,:,:),dim, frac_scale)); end
+        if mode == 1; output = cat(1,output, preprocessing_context_fast_gpu(data(idx_start(i):idx_end(i)-1,:,:),dim, frac_scale)); end
+        
+        current_idx = idx_end(i);
     end
-
-    rand('seed',seed);
-    init_vector = VSA.add_vector();
-    sensor_enc_vec = VSA.add_vector('num',size(data,3));
-    timestamps_vecs = VSA.add_vector('num',size(data,2));
-
-    output = zeros([size(data,1) dim]);
-
-    parfor i=1:size(data,1)
-        % value encoding
-        encoded_values = VSA.frac_binding(init_vector,data(i,:,:) * frac_scale);
-
-        % bind to sensortype
-        sensor_value_pairs = VSA.bind(encoded_values, permute(repmat(sensor_enc_vec,[1 1 size(data,2)]),[1 3 2]));
-
-        % bundle to one timestep
-        sensor_bundle = squeeze(VSA.bundle(permute(sensor_value_pairs,[1 3 2]),[]));
-
-        % encode time context
-        context_vecs = VSA.bind(sensor_bundle, timestamps_vecs);
-        context_vecs = VSA.bundle(context_vecs,[]);
-
-        output(i,:) = context_vecs;
-    end
-
-    output=single(output);
 end
