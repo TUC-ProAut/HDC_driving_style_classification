@@ -2,8 +2,6 @@
 % scken, 2021
 % Copyright (C) 2021 Chair of Automation Technology / TU Chemnitz
 
-clear all
-close all
 
 % parameter setup
 dim = 2048;
