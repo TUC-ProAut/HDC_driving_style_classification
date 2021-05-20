@@ -19,7 +19,7 @@ for d=1:numel(n_dim)
     for s=1:numel(scale)
         for e=1:numel(encoding_dim)
             % load file
-            load(['results/' dataset '/results_VSA_' num2str(n_dim(d)) '_' num2str(scale(s)) '_' num2str(encoding_dim(e)) '_1.0.mat'])
+            load(['results/' dataset '/results_HDC_' num2str(n_dim(d)) '_' num2str(scale(s)) '_' num2str(encoding_dim(e)) '_1.0.mat'])
             
             f1_tensor(d,s,e) = round(report.accuracy,2);
         end
@@ -56,7 +56,7 @@ param_array = zeros([numel(n_dim) numel(encoding_dim)]);
 for d=1:numel(n_dim)
     for e=1:numel(encoding_dim)
         % load file
-        load(['results/' dataset '/results_VSA_' num2str(n_dim(d)) '_8_' num2str(encoding_dim(e)) '_1.0.mat'])
+        load(['results/' dataset '/results_HDC_' num2str(n_dim(d)) '_8_' num2str(encoding_dim(e)) '_1.0.mat'])
         start_idx = findstr(model_summary,'Trainable params: ');
         start_idx = start_idx + 18;
         end_idx = findstr(model_summary,'Non-trainable');
@@ -123,7 +123,7 @@ end
 % VSA network 
 for t=1:numel(training_volume)
     % load file
-    load(['results/' dataset '/results_VSA_' num2str(n_dim) '_' num2str(scale) '_' num2str(encoding_dim) '_' training_volume{t} '.mat'])
+    load(['results/' dataset '/results_HDC_' num2str(n_dim) '_' num2str(scale) '_' num2str(encoding_dim) '_' training_volume{t} '.mat'])
 
     f1_array_VSA(end+1) = report.accuracy;
 end
