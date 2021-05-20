@@ -10,23 +10,40 @@ from utils import *
 def HDC_ANN(config):
     """HDC feed-forward model
     """
+    tf.config.optimizer.set_jit(True)
     encoding_dim = config.encoding_dim
 
-    # This is our input image
     input = keras.Input(shape=(config.input_dim,))
     dropout = layers.Dropout(config.dropout)(input)
     encoded = layers.Dense(encoding_dim, activation='relu')(dropout)
     output = layers.Dense(config.n_classes, activation='softmax')(encoded)
 
-    # This model maps an input to its reconstruction
     model = keras.Model(input, output)
-
-    model.compile(optimizer='adam',
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
 
     return model
 
+def HDC_ANN_tf(input, config, init_vecs, W, biases):
+    """ Tensorflow model of the HDC ANN """
+    tf.config.optimizer.set_jit(True)
+
+    # preprocessing
+    preproc = HDC_tf_preproc(input, init_vecs)
+
+    # normalize data
+    norm_data = tf.divide(preproc - config.m,config.s)
+
+    # neural network for classification
+    #hidden = tf.nn.dropout(preproc, rate=config.dropout)
+    hidden = tf.matmul(norm_data,W['hidden']) + biases['hidden']
+    hidden = tf.nn.relu(hidden)
+
+    output = tf.matmul(hidden,W['output']) + biases['output']
+    output = tf.nn.softmax(output)
+
+    print("total # of trainable parameters:" + str(
+        np.sum([np.prod(v.get_shape().as_list()) for v in tf.compat.v1.trainable_variables()])))
+
+    return output
 
 def LSTM_Network(feature_mat, config):
     """model a LSTM Network, (borrowed from https://github.com/KhaledSaleh/driving_behaviour_classification)
@@ -65,3 +82,51 @@ def LSTM_Network(feature_mat, config):
 
     return final_out
 
+def HDC_tf_preproc(inputs, init_vecs):
+    '''
+    preprocessing function to create HDC vectors with tensorflow on GPU
+    @param inputs: input tensor (#samples , #variables, #timesteps)
+    @param init_vecs: initial hypervectors
+    @return: context vectors
+    '''
+    init_vec = init_vecs['init_vec']
+    sensor_ids = init_vecs['sensor_ids']
+    timestamps = init_vecs['timestamps']
+    scale = init_vecs['scale']
+
+    tf.config.optimizer.set_jit(True)
+    # fractional binding
+    reshaped_input = tf.tile(tf.expand_dims(inputs, axis=3), [1,1,1,init_vec.shape[0]])
+
+    expand_init_vec = tf.expand_dims(K.expand_dims(tf.transpose(init_vec * scale), axis=0), axis=0)
+    reshaped_init_vec = tf.tile(expand_init_vec, [1,reshaped_input.shape[1],1,1])
+    reshaped_init_vec = tf.tile(reshaped_init_vec, [1,1,reshaped_input.shape[2],1])
+    # fractional binding with scale
+    encoded_scalars = tf.math.multiply(reshaped_input, reshaped_init_vec)
+
+    # bind to sensors
+    sensor_ids = tf.transpose(sensor_ids, (1, 0))
+    sensor_ids = tf.expand_dims(tf.expand_dims(sensor_ids, axis=0), axis=0)
+    sensor_ids = tf.tile(sensor_ids, [1,encoded_scalars.shape[1],1,1])
+    sensor_vals = tf.add(encoded_scalars, sensor_ids)
+
+    # bundle all sensor vectors
+    vals_cos = tf.cos(sensor_vals)
+    vals_sin = tf.sin(sensor_vals)
+    sensor_bundle_cos = (tf.reduce_sum(vals_cos, axis=2))
+    sensor_bundle_sin = (tf.reduce_sum(vals_sin, axis=2))
+    sensor_bundle = tf.math.atan2(sensor_bundle_sin, sensor_bundle_cos)
+
+    # encode temporal context
+    timestamps = tf.transpose(timestamps, (1, 0))
+    timestamps = tf.expand_dims(timestamps, axis=0)
+    context_vecs = tf.add(sensor_bundle, timestamps)
+
+    # bundle temporal context
+    complex_context_cos = tf.cos(context_vecs)
+    complex_context_sin = tf.sin(context_vecs)
+    context_bundle_cos = (tf.reduce_sum(complex_context_cos, axis=1))
+    context_bundle_sin = (tf.reduce_sum(complex_context_sin, axis=1))
+    context_bundle = tf.math.atan2(context_bundle_sin, context_bundle_cos)
+
+    return context_bundle
