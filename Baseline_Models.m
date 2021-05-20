@@ -4,7 +4,7 @@
 
 
 % parameter setup
-dim = 2048;
+dim = 576;
 frac_scale = 6;
 
 disp('----------------------------')
@@ -47,11 +47,11 @@ if contains(dataset,'full_crossval')
         disp('Time for testing k-NN:')
         toc
         disp('Accuracy of HDC k-NN method: ')
-        f1 = getF1Score(Y_test,pred);
+        f1 = getF1Score(Y_test{i},pred);
         disp(f1)
 
     end
-    
+
     %%%
     %  spectral features (FFT) with kNN
 
@@ -76,17 +76,17 @@ if contains(dataset,'full_crossval')
 
         Mdl = fitcknn(X_train{i},Y_train{i},'NumNeighbors',1,'Distance','Cityblock');
 
-        % testing 
+        % testing
         pred = predict(Mdl, X_test{i});
 
         disp('Accuracy of Spectral Features kNN method: ')
-        f1 = getF1Score(Y_test,pred);
+        f1 = getF1Score(Y_test{i},pred);
         disp(f1)
 
     end
 end
 
-%% HDC with SVM 
+%% HDC with SVM
 
 ret = system(['python3 create_train_test_split_MATLAB.py --dataset=' dataset ' --preproc=1 --input_dim=' num2str(dim) ' --scale=' num2str(frac_scale)]);
 
@@ -94,7 +94,7 @@ if ret==0
     load('temp_data.mat')
 else
     disp('Data could not converted')
-    return 
+    return
 end
 delete('temp_data.mat')
 
@@ -103,11 +103,11 @@ Mdl = fitcecoc(X_train,Y_train);
 disp('Time for training HDC-SVM:')
 toc
 
-% testing 
+% testing
 tic
 pred = predict(Mdl, X_test);
 disp('Time for testing HDC-SVM:')
-toc 
+toc
 f1 = getF1Score(Y_test,pred);
 disp('Accuracy of HDC SVM:')
 disp(f1)
@@ -121,7 +121,7 @@ Result = table({'HDC-SVM'},f1,'VariableNames',{'Model','F1'});
 VSA = vsa_env('vsa','FHRR','dim',dim);
 VSA.add_vector('vec',X_train','name',num2cell(num2str(Y_train)));
 
-% find k nearest neigbors 
+% find k nearest neigbors
 tic
 [~, l, s] = VSA.find_k_nearest(X_test',3);
 pred = [];
@@ -134,6 +134,7 @@ disp('Time for testing k-NN:')
 toc
 disp('Accuracy of HDC k-NN method: ')
 f1 = getF1Score(Y_test,pred);
+disp(f1)
 
 % add to table
 % Result = table({'HDC-kNN'},acc,'VariableNames',{'Model','F1'});
