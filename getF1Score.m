@@ -19,6 +19,6 @@ for c = 1:num_classes
 end
 
 h=hist(double(y_gt),0:num_classes-1)';
-f1 = sum(stats.Fscore.*(h/sum(h)));
+f1 = sum(f1.*(h/sum(h)));
 
 end 
